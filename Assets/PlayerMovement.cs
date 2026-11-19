@@ -5,6 +5,7 @@ using UnityEngine.InputSystem;
 /// Third-person player movement using CharacterController.
 /// Uses the existing InputSystem_Actions.inputactions asset (Move, Sprint, Jump actions).
 /// CharacterController is the sole physics driver. Rigidbody must be kinematic.
+/// Movement direction is relative to the ThirdPersonCamera facing direction.
 /// </summary>
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
@@ -17,6 +18,10 @@ public class PlayerMovement : MonoBehaviour
     [Tooltip("Assign Assets/InputSystem_Actions.inputactions here")]
     public InputActionAsset inputActionsAsset;
 
+    [Header("Camera")]
+    [Tooltip("Assign the ThirdPersonCamera component from Main Camera")]
+    public ThirdPersonCamera thirdPersonCamera;
+
     [Header("Movement Settings")]
     [Tooltip("Walking speed (units/sec)")]
     public float walkSpeed = 3.5f;
@@ -26,6 +31,9 @@ public class PlayerMovement : MonoBehaviour
 
     [Tooltip("Smooth time for speed transitions (seconds)")]
     public float speedSmoothTime = 0.1f;
+
+    [Tooltip("Speed at which the character rotates toward movement direction (deg/sec)")]
+    public float rotationSpeed = 15f;
 
     [Header("Jump & Gravity")]
     [Tooltip("Jump height in world units")]
@@ -152,9 +160,23 @@ public class PlayerMovement : MonoBehaviour
             ? _moveAction.ReadValue<Vector2>()
             : Vector2.zero;
 
-        // Build movement direction relative to the player's facing direction
+        // Use camera-relative directions so WASD moves relative to where the
+        // camera is pointing, not where the character model is facing.
+        Vector3 forward, right;
+        if (thirdPersonCamera != null)
+        {
+            forward = thirdPersonCamera.HorizontalForward;
+            right   = thirdPersonCamera.HorizontalRight;
+        }
+        else
+        {
+            // Fallback: use player's own facing (original Phase 2 behaviour)
+            forward = transform.forward;
+            right   = transform.right;
+        }
+
         // rawInput.x = strafe (A/D), rawInput.y = forward/back (W/S)
-        Vector3 moveDir = transform.right * rawInput.x + transform.forward * rawInput.y;
+        Vector3 moveDir = right * rawInput.x + forward * rawInput.y;
 
         // Clamp to magnitude 1 so diagonal movement isn't faster than cardinal
         if (moveDir.sqrMagnitude > 1f)
@@ -167,6 +189,16 @@ public class PlayerMovement : MonoBehaviour
 
         // Smooth speed transitions (feels more natural, avoids instant stop)
         _currentSpeed = Mathf.SmoothDamp(_currentSpeed, targetSpeed, ref _speedVelocity, speedSmoothTime);
+
+        // Rotate character to face the movement direction (smooth, not instant)
+        if (moveDir.sqrMagnitude > 0.01f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(moveDir, Vector3.up);
+            transform.rotation = Quaternion.Slerp(
+                transform.rotation,
+                targetRotation,
+                rotationSpeed * Time.deltaTime);
+        }
 
         _controller.Move(moveDir * _currentSpeed * Time.deltaTime);
     }
