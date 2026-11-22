@@ -1,7 +1,6 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 
 /// <summary>
 /// Lightweight Screen-Space Overlay UI for displaying interaction prompts and gameplay notifications.
@@ -19,9 +18,6 @@ public class InteractionUI : MonoBehaviour
 
     [Tooltip("Standard UI Text component displaying the prompt")]
     public Text promptText;
-
-    [Tooltip("Optional TextMeshPro component displaying the prompt (if assigned and valid)")]
-    public TMP_Text promptTextTMP;
 
     [Header("Notification UI References")]
     [Tooltip("The parent GameObject for notification popups (toggled on/off)")]
@@ -215,11 +211,6 @@ public class InteractionUI : MonoBehaviour
         if (promptText != null)
         {
             promptText.text = fullText;
-        }
-
-        if (promptTextTMP != null && promptTextTMP.font != null)
-        {
-            promptTextTMP.text = fullText;
         }
 
         if (promptRoot != null && !_isPromptShowing)
