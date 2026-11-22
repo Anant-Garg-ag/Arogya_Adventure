@@ -66,6 +66,15 @@ public class PlayerMovement : MonoBehaviour
     private bool _isGrounded;
     private bool _jumpRequested;
 
+    // Cached animator parameter hashes (avoids string allocations per frame)
+    private static readonly int AnimIsMoving        = Animator.StringToHash("isMoving");
+    private static readonly int AnimIsWalking       = Animator.StringToHash("isWalking");
+    private static readonly int AnimIsSprinting     = Animator.StringToHash("isSprinting");
+    private static readonly int AnimIsGrounded      = Animator.StringToHash("isGrounded");
+    private static readonly int AnimSpeed           = Animator.StringToHash("speed");
+    private static readonly int AnimVerticalVelocity = Animator.StringToHash("verticalVelocity");
+    private static readonly int AnimJump            = Animator.StringToHash("jump");
+
     // -------------------------------------------------------------------------
     // Unity lifecycle
     // -------------------------------------------------------------------------
@@ -119,7 +128,11 @@ public class PlayerMovement : MonoBehaviour
     private void OnJumpPerformed(InputAction.CallbackContext ctx)
     {
         if (_isGrounded)
+        {
             _jumpRequested = true;
+            if (_animator != null)
+                _animator.SetTrigger(AnimJump);
+        }
     }
 
     // -------------------------------------------------------------------------
@@ -232,7 +245,14 @@ public class PlayerMovement : MonoBehaviour
     {
         if (_animator == null) return;
 
-        bool isMoving = _currentSpeed > 0.1f;
-        _animator.SetBool("isWalking", isMoving);
+        bool isMoving    = _currentSpeed > 0.1f;
+        bool isSprinting = isMoving && (_sprintAction != null && _sprintAction.IsPressed());
+
+        _animator.SetBool(AnimIsMoving, isMoving);
+        _animator.SetBool(AnimIsWalking, isMoving); // Preserved for backward compatibility
+        _animator.SetBool(AnimIsSprinting, isSprinting);
+        _animator.SetBool(AnimIsGrounded, _isGrounded);
+        _animator.SetFloat(AnimSpeed, _currentSpeed);
+        _animator.SetFloat(AnimVerticalVelocity, _velocity.y);
     }
 }
