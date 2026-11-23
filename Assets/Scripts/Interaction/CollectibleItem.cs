@@ -10,6 +10,12 @@ using UnityEngine.Events;
 public class CollectibleItem : MonoBehaviour, IInteractable
 {
     [Header("Item Details")]
+    [Tooltip("Unique identifier used by the inventory and mission systems (e.g. 'tulsi', 'pure_water')")]
+    public string itemId = "tulsi";
+
+    [Tooltip("Quantity added to inventory on collection")]
+    public int quantity = 1;
+
     [Tooltip("Display name of this collectible item")]
     public string itemName = "Tulsi Leaf (Medicinal Herb)";
 
@@ -45,7 +51,13 @@ public class CollectibleItem : MonoBehaviour, IInteractable
 
         _isCollected = true;
 
-        // 1. Show visible on-screen confirmation banner
+        // 1. Add to Inventory Manager
+        if (InventoryManager.Instance != null && !string.IsNullOrEmpty(itemId))
+        {
+            InventoryManager.Instance.AddItem(itemId, quantity);
+        }
+
+        // 2. Show visible on-screen confirmation banner
         if (InteractionUI.Instance != null)
         {
             InteractionUI.Instance.ShowNotification($"Item Collected: {itemName}", notificationDuration);

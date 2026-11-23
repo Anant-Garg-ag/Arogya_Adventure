@@ -19,6 +19,16 @@ public class SimpleInteractable : MonoBehaviour, IInteractable
     [Tooltip("How long the confirmation message stays on screen")]
     public float responseDuration = 4.0f;
 
+    [Header("Mission Link (Village Well)")]
+    [Tooltip("If true, coordinates with MissionManager for Well progression")]
+    public bool isVillageWell = false;
+
+    [TextArea(2, 4)]
+    public string mission1ActiveMessage = "The well water is stagnant and murky. The Village Elder needs the medicinal Tulsi leaves before we can investigate properly.";
+
+    [TextArea(2, 4)]
+    public string mission2InvestigationMessage = "You examine the well closely: A toxic dark residue coats the stones. The water source is contaminated! (Mission 2 Completed)";
+
     [Header("Interaction Behavior")]
     [Tooltip("Whether this object can be interacted with multiple times")]
     public bool isRepeatable = true;
@@ -50,13 +60,29 @@ public class SimpleInteractable : MonoBehaviour, IInteractable
 
         _interactionCount++;
 
-        // Display visible on-screen confirmation
-        if (InteractionUI.Instance != null && !string.IsNullOrEmpty(responseMessage))
+        string messageToDisplay = responseMessage;
+
+        // Dynamic mission evaluation for the Village Well
+        if (isVillageWell && MissionManager.Instance != null)
         {
-            InteractionUI.Instance.ShowNotification(responseMessage, responseDuration);
+            if (MissionManager.Instance.currentMissionId == 1)
+            {
+                messageToDisplay = mission1ActiveMessage;
+            }
+            else if (MissionManager.Instance.currentMissionId == 2)
+            {
+                messageToDisplay = mission2InvestigationMessage;
+                MissionManager.Instance.CompleteCurrentMissionAndAdvance();
+            }
         }
 
-        Debug.Log($"[SimpleInteractable] Interacted with '{gameObject.name}': {responseMessage} (count: {_interactionCount})");
+        // Display visible on-screen confirmation
+        if (InteractionUI.Instance != null && !string.IsNullOrEmpty(messageToDisplay))
+        {
+            InteractionUI.Instance.ShowNotification(messageToDisplay, responseDuration);
+        }
+
+        Debug.Log($"[SimpleInteractable] Interacted with '{gameObject.name}': {messageToDisplay} (count: {_interactionCount})");
 
         onInteract?.Invoke(interactor);
 
