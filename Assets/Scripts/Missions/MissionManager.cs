@@ -96,29 +96,75 @@ public class MissionManager : MonoBehaviour
     {
         _missions.Clear();
 
-        // Mission 1: Confirmed Story Beat
+        // Scene 1: The Heatstroke Remedy (Authoritative Story Sequence from Entire_Plot.docx)
+        // Step 1: Starting NPC discovery
         _missions[1] = new MissionInfo(
             1,
-            "Collect Medicinal Tulsi",
-            "Bring 3 Tulsi leaves from near the stream to the Village Elder.",
-            "tulsi",
-            3
-        );
-
-        // Mission 2: Confirmed Story Beat
-        _missions[2] = new MissionInfo(
-            2,
-            "Investigate Village Well",
-            "Inspect the tainted village well to identify the source of contamination.",
+            "The Heatstroke Victim",
+            "Examine the collapsed villager lying near the rocks by the village entrance.",
             "",
             0
         );
 
-        // Missions 3 to 6: Linear milestones per Implementation Plan
-        _missions[3] = new MissionInfo(3, "Highland Herb Foraging", "Gather Ashwagandha and Neem along the riverbanks.", "ashwagandha", 2);
-        _missions[4] = new MissionInfo(4, "Sacred Waterfall Source", "Reach the mountain waterfall to fetch pure untainted water.", "pure_water", 1);
-        _missions[5] = new MissionInfo(5, "Apothecary Decoction", "Brew the Sanjeevani Kadha at the village clinic crafting table.", "sanjeevani_kadha", 1);
-        _missions[6] = new MissionInfo(6, "Cure Arogya Gram", "Deliver the Sanjeevani Kadha to heal the village.", "", 0);
+        // Step 2: Ingredient Gathering
+        _missions[2] = new MissionInfo(
+            2,
+            "Gather Cooling Ingredients",
+            "Collect Sandalwood and Forest Roses from the woods, draw Well Water, and find an Empty Glass.",
+            "sandalwood",
+            1
+        );
+
+        // Step 3: Circular Grinding Minigame
+        _missions[3] = new MissionInfo(
+            3,
+            "Grind Chandana-Rose Paste",
+            "Take Sandalwood and Rose Water to the village mortar and pestle and complete the circular grinding minigame.",
+            "chandana_paste",
+            1
+        );
+
+        // Step 4: Apply Paste
+        _missions[4] = new MissionInfo(
+            4,
+            "Apply Cooling Paste",
+            "Return to the fainted villager and apply the soothing Chandana-Rose paste to reduce his burning fever.",
+            "",
+            0
+        );
+
+        // Step 5: Sugarcane Juice Preparation
+        _missions[5] = new MissionInfo(
+            5,
+            "Prepare Sugarcane Juice",
+            "Gather fresh Sugarcane near the lake, crush it using the mortar and pestle, and pour it into the glass.",
+            "sugarcane_juice",
+            1
+        );
+
+        // Step 6: Administer Juice and Revive
+        _missions[6] = new MissionInfo(
+            6,
+            "Revive the Villager",
+            "Administer the fresh Sugarcane juice to the villager to restore his electrolytes and prana.",
+            "",
+            0
+        );
+
+        // Step 7: Scene 1 Completed & Unlock Next Story Beat
+        _missions[7] = new MissionInfo(
+            7,
+            "Scene 1 Complete: Next Affliction",
+            "The recovered villager reveals that two more villagers have collapsed deeper in the village. Proceed to their aid.",
+            "",
+            0
+        );
+    }
+
+    public void SetMission(int missionId)
+    {
+        currentMissionId = missionId;
+        NotifyCurrentMissionState();
     }
 
     private void HandleInventoryChanged(string itemId, int totalCount)

@@ -33,7 +33,7 @@ public static class InteractionSetup
     private static void CheckAndSetup()
     {
         var player = GameObject.Find("Player");
-        if (player != null && (player.GetComponent<PlayerInteraction>() == null || GameObject.Find("Tulsi_Herb_2") == null || GameObject.Find("Clinic_Door") == null))
+        if (player != null && (player.GetComponent<PlayerInteraction>() == null || GameObject.Find("Village_Workstation") == null || GameObject.Find("Sandalwood_Node") == null))
         {
             SetupSceneInteraction(false);
         }
@@ -254,48 +254,64 @@ public static class InteractionSetup
         }
         inventoryUI.BuildOrValidateUI();
 
-        // 4. Setup Elder NPC Interactable (Scene_1_map/Cube)
-        var elderCube = GameObject.Find("Scene_1_map/Cube");
-        if (elderCube != null)
+        // 4. Setup Fainted Villager NPC (Scene_1_map/Cube)
+        var faintedCube = GameObject.Find("Scene_1_map/Cube");
+        if (faintedCube != null)
         {
-            var npc = elderCube.GetComponent<NPCInteractable>();
-            if (npc == null)
+            faintedCube.transform.position = new Vector3(316.510f, -43.710f, -84.166f);
+            var armature = GameObject.Find("Scene_1_map/Armature");
+            if (armature != null)
             {
-                npc = elderCube.AddComponent<NPCInteractable>();
+                armature.transform.position = new Vector3(314.093f, -43.723f, -83.260f);
+                armature.transform.eulerAngles = new Vector3(180f, 290.7f, 0f); // Collapsed lying pose
+            }
+
+            var faintedNpc = faintedCube.GetComponent<FaintedVillagerNPC>();
+            if (faintedNpc == null)
+            {
+                faintedNpc = faintedCube.AddComponent<FaintedVillagerNPC>();
                 isDirty = true;
             }
-            npc.npcName = "Village Elder";
-            npc.promptVerb = "Talk to";
-            npc.isVillageElder = true;
-            npc.mission1IncompleteDialogue = "I am worried about the sickness spreading through our village. Please bring me three Tulsi leaves from near the stream.";
-            npc.mission1CompleteDialogue = "Thank you. The Tulsi will help us prepare a remedy. Now, I need you to investigate the village well. Something is wrong with its water.";
-            npc.mission2ActiveDialogue = "Please inspect the village well. We must discover why its water is tainted.";
+            if (armature != null) faintedNpc.armatureTransform = armature.transform;
 
-            var col = elderCube.GetComponent<Collider>();
+            // Also keep NPCInteractable for legacy dialogue/compatibility
+            var npc = faintedCube.GetComponent<NPCInteractable>();
+            if (npc == null)
+            {
+                npc = faintedCube.AddComponent<NPCInteractable>();
+                isDirty = true;
+            }
+            npc.npcName = "Fainted Villager";
+            npc.promptVerb = "Tend to";
+            npc.isVillageElder = false;
+            npc.dialogueLine = "The heat is unbearable... cooling Chandana paste and fresh sugarcane juice will revive me...";
+
+            var col = faintedCube.GetComponent<Collider>();
             if (col == null)
             {
-                var boxCol = elderCube.AddComponent<BoxCollider>();
+                var boxCol = faintedCube.AddComponent<BoxCollider>();
                 boxCol.center = new Vector3(0.1f, 2.5f, 0f);
-                boxCol.size = new Vector3(2.0f, 5.0f, 2.0f);
+                boxCol.size = new Vector3(6.0f, 6.0f, 6.0f);
                 boxCol.isTrigger = true;
                 isDirty = true;
             }
-
-            // Check if Animator can be attached for idle pose
-            var elderAnimator = elderCube.GetComponent<Animator>();
-            if (elderAnimator == null)
+            else if (col is BoxCollider bc)
             {
-                var armature = GameObject.Find("Scene_1_map/Armature");
-                if (armature != null)
+                bc.isTrigger = true;
+                bc.size = new Vector3(6.0f, 6.0f, 6.0f);
+            }
+
+            // Check if Animator can be attached for pose
+            var elderAnimator = faintedCube.GetComponent<Animator>();
+            if (elderAnimator == null && armature != null)
+            {
+                elderAnimator = faintedCube.AddComponent<Animator>();
+                var sadhuAvatar = AssetDatabase.LoadAssetAtPath<Avatar>("Assets/Sadhu_rigged_walking_animation.fbx");
+                if (sadhuAvatar != null)
                 {
-                    elderAnimator = elderCube.AddComponent<Animator>();
-                    var sadhuAvatar = AssetDatabase.LoadAssetAtPath<Avatar>("Assets/Sadhu_rigged_walking_animation.fbx");
-                    if (sadhuAvatar != null)
-                    {
-                        elderAnimator.avatar = sadhuAvatar;
-                    }
-                    isDirty = true;
+                    elderAnimator.avatar = sadhuAvatar;
                 }
+                isDirty = true;
             }
         }
 
@@ -303,16 +319,22 @@ public static class InteractionSetup
         var well = GameObject.Find("Scene_1_map/Well");
         if (well != null)
         {
+            var wellWater = well.GetComponent<WellInteractable>();
+            if (wellWater == null)
+            {
+                wellWater = well.AddComponent<WellInteractable>();
+                isDirty = true;
+            }
+
             var wellInteractable = well.GetComponent<SimpleInteractable>();
             if (wellInteractable == null)
             {
                 wellInteractable = well.AddComponent<SimpleInteractable>();
                 isDirty = true;
             }
-            wellInteractable.promptText = "Inspect Well";
-            wellInteractable.isVillageWell = true;
-            wellInteractable.mission1ActiveMessage = "The well water is stagnant and murky. The Village Elder needs the medicinal Tulsi leaves before we can investigate properly.";
-            wellInteractable.mission2InvestigationMessage = "You examine the well closely: A toxic dark residue coats the stones. The water source is contaminated! (Mission 2 Completed)";
+            wellInteractable.promptText = "Draw Well Water";
+            wellInteractable.responseMessage = "Drew pure, cool water from the village well.";
+            wellInteractable.isVillageWell = false;
             wellInteractable.isRepeatable = true;
 
             var col = well.GetComponent<Collider>();
@@ -324,12 +346,12 @@ public static class InteractionSetup
             }
         }
 
-        // 6. Setup 3 Tulsi Herb Collectibles along the stream/pathway
+        // 6. Setup Collectibles (Tulsi, Sandalwood, Forest Rose, Sugarcane)
         Vector3[] herbPositions = new Vector3[]
         {
-            new Vector3(333.5f, -43.6f, -72.0f), // Near spawn
-            new Vector3(338.5f, -43.5f, -79.0f), // Along stream bank
-            new Vector3(343.5f, -43.4f, -86.5f)  // Further down stream bank
+            new Vector3(333.5f, -43.6f, -72.0f),
+            new Vector3(338.5f, -43.5f, -79.0f),
+            new Vector3(343.5f, -43.4f, -86.5f)
         };
         string[] herbNames = new string[] { "Tulsi_Herb_Test", "Tulsi_Herb_2", "Tulsi_Herb_3" };
 
@@ -368,17 +390,163 @@ public static class InteractionSetup
 
                 isDirty = true;
             }
-            else
-            {
-                var collectible = h.GetComponent<CollectibleItem>();
-                if (collectible != null)
-                {
-                    collectible.itemId = "tulsi";
-                    collectible.itemName = "Tulsi Leaf (Medicinal Herb)";
-                    collectible.quantity = 1;
-                }
-            }
         }
+
+        // Sandalwood Wood Node (in forest)
+        var sandalwood = GameObject.Find("Sandalwood_Node");
+        if (sandalwood == null)
+        {
+            sandalwood = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            sandalwood.name = "Sandalwood_Node";
+            sandalwood.transform.position = new Vector3(325.0f, -43.5f, -60.0f);
+            sandalwood.transform.localScale = new Vector3(0.7f, 0.4f, 0.7f);
+            var col = sandalwood.GetComponent<Collider>();
+            if (col != null) col.isTrigger = true;
+
+            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            mat.color = new Color(0.75f, 0.55f, 0.35f, 1f);
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", new Color(0.75f, 0.55f, 0.35f, 1f));
+            sandalwood.GetComponent<MeshRenderer>().sharedMaterial = mat;
+
+            var c = sandalwood.AddComponent<CollectibleItem>();
+            c.itemId = "sandalwood";
+            c.itemName = "Sandalwood Wood";
+            c.promptVerb = "Gather";
+            c.quantity = 1;
+            c.disableGameObject = true;
+            isDirty = true;
+        }
+
+        // Forest Rose Node (in forest)
+        var rose = GameObject.Find("Rose_Node");
+        if (rose == null)
+        {
+            rose = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            rose.name = "Rose_Node";
+            rose.transform.position = new Vector3(335.0f, -43.5f, -65.0f);
+            rose.transform.localScale = new Vector3(0.5f, 0.5f, 0.5f);
+            var col = rose.GetComponent<Collider>();
+            if (col != null) col.isTrigger = true;
+
+            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            mat.color = new Color(0.95f, 0.15f, 0.25f, 1f);
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", new Color(0.95f, 0.15f, 0.25f, 1f));
+            rose.GetComponent<MeshRenderer>().sharedMaterial = mat;
+
+            var c = rose.AddComponent<CollectibleItem>();
+            c.itemId = "rose";
+            c.itemName = "Forest Rose";
+            c.promptVerb = "Pick";
+            c.quantity = 1;
+            c.disableGameObject = true;
+            isDirty = true;
+        }
+
+        // Sugarcane Node (along lake/stream bank)
+        var sugarcane = GameObject.Find("Sugarcane_Node");
+        if (sugarcane == null)
+        {
+            sugarcane = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            sugarcane.name = "Sugarcane_Node";
+            sugarcane.transform.position = new Vector3(338.5f, -43.5f, -79.0f);
+            sugarcane.transform.localScale = new Vector3(0.4f, 1.6f, 0.4f);
+            var col = sugarcane.GetComponent<Collider>();
+            if (col != null) col.isTrigger = true;
+
+            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            mat.color = new Color(0.45f, 0.85f, 0.25f, 1f);
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", new Color(0.45f, 0.85f, 0.25f, 1f));
+            sugarcane.GetComponent<MeshRenderer>().sharedMaterial = mat;
+
+            var c = sugarcane.AddComponent<CollectibleItem>();
+            c.itemId = "sugarcane";
+            c.itemName = "Fresh Sugarcane";
+            c.promptVerb = "Harvest";
+            c.quantity = 1;
+            c.disableGameObject = true;
+            isDirty = true;
+        }
+
+        // 7. Setup Village Workstation (Mortar & Pestle and Empty Glass) in open village work area
+        var workstation = GameObject.Find("Village_Workstation");
+        if (workstation == null)
+        {
+            workstation = new GameObject("Village_Workstation");
+            workstation.transform.position = new Vector3(186.0f, -44.0f, -92.0f);
+
+            // Table
+            var table = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            table.name = "Workstation_Table";
+            table.transform.SetParent(workstation.transform, false);
+            table.transform.localPosition = new Vector3(0f, 0.6f, 0f);
+            table.transform.localScale = new Vector3(2.4f, 0.8f, 1.4f);
+
+            var tableMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            tableMat.color = new Color(0.45f, 0.32f, 0.20f, 1f);
+            if (tableMat.HasProperty("_BaseColor")) tableMat.SetColor("_BaseColor", new Color(0.45f, 0.32f, 0.20f, 1f));
+            table.GetComponent<MeshRenderer>().sharedMaterial = tableMat;
+
+            // Mortar
+            var mortar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            mortar.name = "Workstation_Mortar";
+            mortar.transform.SetParent(workstation.transform, false);
+            mortar.transform.localPosition = new Vector3(-0.4f, 1.25f, 0f);
+            mortar.transform.localScale = new Vector3(0.6f, 0.35f, 0.6f);
+
+            var mortarMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            mortarMat.color = new Color(0.35f, 0.35f, 0.35f, 1f);
+            if (mortarMat.HasProperty("_BaseColor")) mortarMat.SetColor("_BaseColor", new Color(0.35f, 0.35f, 0.35f, 1f));
+            mortar.GetComponent<MeshRenderer>().sharedMaterial = mortarMat;
+
+            // Pestle
+            var pestle = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            pestle.name = "Workstation_Pestle";
+            pestle.transform.SetParent(mortar.transform, false);
+            pestle.transform.localPosition = new Vector3(0f, 0.5f, 0f);
+            pestle.transform.localEulerAngles = new Vector3(15f, 0f, 15f);
+            pestle.transform.localScale = new Vector3(0.2f, 0.8f, 0.2f);
+            pestle.GetComponent<MeshRenderer>().sharedMaterial = mortarMat;
+
+            // Workstation Trigger Collider
+            var wsCol = workstation.AddComponent<BoxCollider>();
+            wsCol.center = new Vector3(0f, 1f, 0f);
+            wsCol.size = new Vector3(3.5f, 2.5f, 3.5f);
+            wsCol.isTrigger = true;
+
+            workstation.AddComponent<MortarWorkstation>();
+
+            // Empty Glass Collectible on table
+            var glass = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+            glass.name = "Empty_Glass_Node";
+            glass.transform.SetParent(workstation.transform, false);
+            glass.transform.localPosition = new Vector3(0.6f, 1.25f, 0f);
+            glass.transform.localScale = new Vector3(0.3f, 0.35f, 0.3f);
+            var glassCol = glass.GetComponent<Collider>();
+            if (glassCol != null) glassCol.isTrigger = true;
+
+            var glassMat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
+            glassMat.color = new Color(0.85f, 0.95f, 1.0f, 0.65f);
+            if (glassMat.HasProperty("_BaseColor")) glassMat.SetColor("_BaseColor", new Color(0.85f, 0.95f, 1.0f, 0.65f));
+            glass.GetComponent<MeshRenderer>().sharedMaterial = glassMat;
+
+            var glassCollectible = glass.AddComponent<CollectibleItem>();
+            glassCollectible.itemId = "empty_glass";
+            glassCollectible.itemName = "Empty Glass";
+            glassCollectible.promptVerb = "Take";
+            glassCollectible.quantity = 1;
+            glassCollectible.disableGameObject = true;
+
+            isDirty = true;
+        }
+
+        // 8. Setup Grinding Minigame UI
+        var minigame = canvasGo.GetComponent<GrindingMinigameUI>();
+        if (minigame == null)
+        {
+            minigame = canvasGo.AddComponent<GrindingMinigameUI>();
+            isDirty = true;
+        }
+        minigame.EnsureUIExists();
 
         // 7. Setup Village Apothecary / Clinic (House_1.003)
         var clinicHouse = GameObject.Find("Scene_1_map/House_1.003");
