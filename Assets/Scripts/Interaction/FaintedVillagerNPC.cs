@@ -11,8 +11,8 @@ public class FaintedVillagerNPC : MonoBehaviour, IInteractable
 
     [Header("Visual References")]
     public Transform armatureTransform;
-    public Vector3 lyingEuler = new Vector3(180f, 290.7f, 0f);
-    public Vector3 standingEuler = new Vector3(270f, 290.7f, 0f);
+    public Vector3 lyingEuler = new Vector3(270.07f, 290.70f, 0f);
+    public Vector3 standingEuler = new Vector3(0f, 290.70f, 0f);
 
     [Header("State")]
     public bool isRecovered = false;
@@ -24,6 +24,16 @@ public class FaintedVillagerNPC : MonoBehaviour, IInteractable
         {
             var arm = GameObject.Find("Scene_1_map/Armature");
             if (arm != null) armatureTransform = arm.transform;
+        }
+
+        // Fix any legacy 180 inverted rotation so NPC rests on grass surface
+        if (Mathf.Abs(lyingEuler.x - 180f) < 5f)
+        {
+            lyingEuler = new Vector3(270.07f, 290.70f, 0f);
+        }
+        if (Mathf.Abs(standingEuler.x - 270f) < 5f)
+        {
+            standingEuler = new Vector3(0f, 290.70f, 0f);
         }
 
         SetPoseCollapsed();

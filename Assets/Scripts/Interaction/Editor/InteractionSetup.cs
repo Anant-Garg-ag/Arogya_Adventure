@@ -263,7 +263,7 @@ public static class InteractionSetup
             if (armature != null)
             {
                 armature.transform.position = new Vector3(314.093f, -43.723f, -83.260f);
-                armature.transform.eulerAngles = new Vector3(180f, 290.7f, 0f); // Collapsed lying pose
+                armature.transform.eulerAngles = new Vector3(270.07f, 290.7f, 0f); // Collapsed lying pose on grass
             }
 
             var faintedNpc = faintedCube.GetComponent<FaintedVillagerNPC>();
