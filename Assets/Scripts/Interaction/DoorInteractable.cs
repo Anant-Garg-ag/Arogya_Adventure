@@ -21,6 +21,9 @@ public class DoorInteractable : MonoBehaviour, IInteractable
     [Tooltip("Target rotation angle when open (relative to initial closed rotation, in degrees)")]
     public float openAngle = 90.0f;
 
+    [Tooltip("Local axis around which the hinge rotates. Defaults to Vector3.up (0,1,0). Use Vector3.forward (0,0,1) if parent is rotated -90 on X.")]
+    public Vector3 rotationAxis = Vector3.up;
+
     [Tooltip("Speed of opening/closing transition in seconds")]
     public float transitionDuration = 0.8f;
 
@@ -45,7 +48,8 @@ public class DoorInteractable : MonoBehaviour, IInteractable
         }
 
         _closedRotation = hingeTransform.localRotation;
-        _openRotation = _closedRotation * Quaternion.Euler(0f, openAngle, 0f);
+        Vector3 axis = rotationAxis != Vector3.zero ? rotationAxis.normalized : Vector3.up;
+        _openRotation = _closedRotation * Quaternion.AngleAxis(openAngle, axis);
 
         if (isOpen)
         {

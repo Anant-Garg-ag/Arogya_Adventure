@@ -22,9 +22,12 @@ public class NPCInteractable : MonoBehaviour, IInteractable
     [Tooltip("Duration in seconds the dialogue banner remains visible")]
     public float displayDuration = 5.0f;
 
-    [Header("Mission Dialogue Link (Village Elder)")]
-    [Tooltip("If true, evaluates MissionManager and displays progression dialogue")]
+    [Header("Mission Dialogue Link")]
+    [Tooltip("If true, evaluates MissionManager as the Village Elder")]
     public bool isVillageElder = true;
+
+    [Tooltip("If true, evaluates MissionManager as the starting Injured Villager")]
+    public bool isStartingVillager = false;
 
     [TextArea(2, 4)]
     public string mission1IncompleteDialogue = "I am worried about the sickness spreading through our village. Please bring me three Tulsi leaves from near the stream.";
@@ -59,8 +62,8 @@ public class NPCInteractable : MonoBehaviour, IInteractable
 
         string spokenLine = dialogueLine;
 
-        // Dynamic mission evaluation for the Village Elder
-        if (isVillageElder && MissionManager.Instance != null)
+        // Dynamic mission evaluation for the Village Elder or Starting Injured Villager
+        if ((isVillageElder || isStartingVillager) && MissionManager.Instance != null)
         {
             if (MissionManager.Instance.currentMissionId == 1)
             {
@@ -74,7 +77,7 @@ public class NPCInteractable : MonoBehaviour, IInteractable
                     spokenLine = mission1IncompleteDialogue;
                 }
             }
-            else if (MissionManager.Instance.currentMissionId == 2)
+            else if (MissionManager.Instance.currentMissionId >= 2)
             {
                 spokenLine = mission2ActiveDialogue;
             }
