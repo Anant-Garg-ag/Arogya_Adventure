@@ -33,7 +33,7 @@ public static class InteractionSetup
     private static void CheckAndSetup()
     {
         var player = GameObject.Find("Player");
-        if (player != null && (player.GetComponent<PlayerInteraction>() == null || GameObject.Find("Tulsi_Herb_2") == null || GameObject.Find("Clinic_Door") == null || GameObject.Find("Elder_Door") == null || GameObject.Find("Village_Elder") == null))
+        if (player != null && (player.GetComponent<PlayerInteraction>() == null || GameObject.Find("Tulsi_Herb_2") == null || GameObject.Find("Clinic_Door") == null))
         {
             SetupSceneInteraction(false);
         }
@@ -254,60 +254,48 @@ public static class InteractionSetup
         }
         inventoryUI.BuildOrValidateUI();
 
-        // 4. Setup Starting Injured Villager (Scene_1_map/Cube)
-        var injuredCube = GameObject.Find("Scene_1_map/Cube");
-        if (injuredCube != null)
+        // 4. Setup Elder NPC Interactable (Scene_1_map/Cube)
+        var elderCube = GameObject.Find("Scene_1_map/Cube");
+        if (elderCube != null)
         {
-            injuredCube.transform.position = new Vector3(316.510f, -43.710f, -84.166f);
-            var armature = GameObject.Find("Scene_1_map/Armature");
-            if (armature != null)
-            {
-                armature.transform.position = new Vector3(314.093f, -43.723f, -83.260f);
-                armature.transform.eulerAngles = new Vector3(270f, 290.7f, 0f);
-            }
-
-            var npc = injuredCube.GetComponent<NPCInteractable>();
+            var npc = elderCube.GetComponent<NPCInteractable>();
             if (npc == null)
             {
-                npc = injuredCube.AddComponent<NPCInteractable>();
+                npc = elderCube.AddComponent<NPCInteractable>();
                 isDirty = true;
             }
-            npc.npcName = "Injured Villager";
-            npc.promptVerb = "Tend to";
-            npc.isVillageElder = false;
-            npc.isStartingVillager = true;
-            npc.dialogueLine = "Ugh... the heat is unbearable... My chest burns, and dizziness clouds my vision... Please, fetch fresh Tulsi leaves from near the stream to cool this burning fever...";
-            npc.mission1IncompleteDialogue = "Ugh... the heat is unbearable... My chest burns, and dizziness clouds my vision... Please, fetch fresh Tulsi leaves from near the stream to cool this burning fever...";
-            npc.mission1CompleteDialogue = "Ah... the cool essence of Tulsi eases my fever... Thank you, traveler. Our village is stricken by a sickness from the tainted well. Please speak to the Village Elder in the council house across the village path.";
-            npc.mission2ActiveDialogue = "The Village Elder awaits you in the large council hall across the village path. Please help heal our people.";
+            npc.npcName = "Village Elder";
+            npc.promptVerb = "Talk to";
+            npc.isVillageElder = true;
+            npc.mission1IncompleteDialogue = "I am worried about the sickness spreading through our village. Please bring me three Tulsi leaves from near the stream.";
+            npc.mission1CompleteDialogue = "Thank you. The Tulsi will help us prepare a remedy. Now, I need you to investigate the village well. Something is wrong with its water.";
+            npc.mission2ActiveDialogue = "Please inspect the village well. We must discover why its water is tainted.";
 
-            var col = injuredCube.GetComponent<BoxCollider>();
+            var col = elderCube.GetComponent<Collider>();
             if (col == null)
             {
-                col = injuredCube.AddComponent<BoxCollider>();
-            }
-            col.center = new Vector3(0.5f, 6.0f, 0f);
-            col.size = new Vector3(14.0f, 15.0f, 12.0f);
-            col.isTrigger = true;
-            isDirty = true;
-
-            var smr = injuredCube.GetComponent<SkinnedMeshRenderer>();
-            if (smr != null)
-            {
-                smr.updateWhenOffscreen = true;
+                var boxCol = elderCube.AddComponent<BoxCollider>();
+                boxCol.center = new Vector3(0.1f, 2.5f, 0f);
+                boxCol.size = new Vector3(2.0f, 5.0f, 2.0f);
+                boxCol.isTrigger = true;
+                isDirty = true;
             }
 
             // Check if Animator can be attached for idle pose
-            var elderAnimator = injuredCube.GetComponent<Animator>();
-            if (elderAnimator == null && armature != null)
+            var elderAnimator = elderCube.GetComponent<Animator>();
+            if (elderAnimator == null)
             {
-                elderAnimator = injuredCube.AddComponent<Animator>();
-                var sadhuAvatar = AssetDatabase.LoadAssetAtPath<Avatar>("Assets/Sadhu_rigged_walking_animation.fbx");
-                if (sadhuAvatar != null)
+                var armature = GameObject.Find("Scene_1_map/Armature");
+                if (armature != null)
                 {
-                    elderAnimator.avatar = sadhuAvatar;
+                    elderAnimator = elderCube.AddComponent<Animator>();
+                    var sadhuAvatar = AssetDatabase.LoadAssetAtPath<Avatar>("Assets/Sadhu_rigged_walking_animation.fbx");
+                    if (sadhuAvatar != null)
+                    {
+                        elderAnimator.avatar = sadhuAvatar;
+                    }
+                    isDirty = true;
                 }
-                isDirty = true;
             }
         }
 
@@ -392,9 +380,6 @@ public static class InteractionSetup
             }
         }
 
-        Material planksMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Wood_Planks_Mat.mat");
-        Material furnitureMat = AssetDatabase.LoadAssetAtPath<Material>("Assets/Materials/Wood_Furniture_Mat.mat");
-
         // 7. Setup Village Apothecary / Clinic (House_1.003)
         var clinicHouse = GameObject.Find("Scene_1_map/House_1.003");
         if (clinicHouse != null)
@@ -407,241 +392,102 @@ public static class InteractionSetup
                 isDirty = true;
             }
 
-            // Clean up any legacy children
-            var oldColliders = clinicHouse.transform.Find("Clinic_Colliders");
-            if (oldColliders != null) Object.DestroyImmediate(oldColliders.gameObject);
-            var oldInterior = clinicHouse.transform.Find("Clinic_Interior");
-            if (oldInterior != null) Object.DestroyImmediate(oldInterior.gameObject);
-            var oldDoor = clinicHouse.transform.Find("Clinic_Door");
-            if (oldDoor != null) Object.DestroyImmediate(oldDoor.gameObject);
-
-            // Recreate Clinic_Colliders child hierarchy (segmented perimeter walls, FRONT doorway clear on +X facade)
-            var cGo = new GameObject("Clinic_Colliders");
-            cGo.transform.SetParent(clinicHouse.transform, false);
-            var collidersRoot = cGo.transform;
-
-            CreateBoxColliderChild(collidersRoot, "Wall_Back_West", new Vector3(-3.4f, -0.3f, 3.8f), new Vector3(0.4f, 17.5f, 7.6f));
-            CreateBoxColliderChild(collidersRoot, "Wall_North_Gable", new Vector3(0.55f, -8.6f, 3.8f), new Vector3(7.8f, 0.4f, 7.6f));
-            CreateBoxColliderChild(collidersRoot, "Wall_South_Gable", new Vector3(0.55f, 8.2f, 3.8f), new Vector3(7.8f, 0.4f, 7.6f));
-            CreateBoxColliderChild(collidersRoot, "Roof_Collider", new Vector3(0.55f, -0.3f, 7.6f), new Vector3(7.8f, 17.5f, 0.4f));
-            CreateBoxColliderChild(collidersRoot, "Front_Wall_North", new Vector3(4.3f, -4.75f, 3.8f), new Vector3(0.4f, 7.7f, 7.6f));
-            CreateBoxColliderChild(collidersRoot, "Front_Wall_South", new Vector3(4.3f, 4.85f, 3.8f), new Vector3(0.4f, 6.7f, 7.6f));
-            CreateBoxColliderChild(collidersRoot, "Front_Door_Lintel", new Vector3(4.3f, 0.3f, 5.6f), new Vector3(0.4f, 2.4f, 4.0f));
-
-            // Setup Clinic_Interior child hierarchy
-            var iGo = new GameObject("Clinic_Interior");
-            iGo.transform.SetParent(clinicHouse.transform, false);
-            var interiorRoot = iGo.transform;
-
-            // Interior Floor (horizontal in world space: thickness in local Z)
-            var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            floor.name = "Interior_Floor";
-            floor.transform.SetParent(interiorRoot, false);
-            floor.transform.localPosition = new Vector3(0.55f, -0.3f, -0.05f);
-            floor.transform.localScale = new Vector3(7.4f, 17.0f, 0.05f);
-            if (planksMat != null) floor.GetComponent<MeshRenderer>().sharedMaterial = planksMat;
-
-            // Medicine Crafting Table
-            var table = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            table.name = "Medicine_Crafting_Table";
-            table.transform.SetParent(interiorRoot, false);
-            table.transform.localPosition = new Vector3(-1.5f, 0.3f, 0.7f);
-            table.transform.localScale = new Vector3(1.6f, 3.0f, 0.8f);
-            if (furnitureMat != null) table.GetComponent<MeshRenderer>().sharedMaterial = furnitureMat;
-
-            var tableInteractable = table.AddComponent<SimpleInteractable>();
-            tableInteractable.promptText = "Examine Medicine Table";
-            tableInteractable.responseMessage = "Vaidya's Crafting Table: Used to grind herbs and brew curative remedies.";
-            tableInteractable.isRepeatable = true;
-
-            // Mortar prop on table
-            var mortar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            mortar.name = "Herbal_Mortar";
-            mortar.transform.SetParent(interiorRoot, false);
-            mortar.transform.localPosition = new Vector3(-1.5f, 0.3f, 1.25f);
-            mortar.transform.localScale = new Vector3(0.4f, 0.3f, 0.4f);
-            if (furnitureMat != null) mortar.GetComponent<MeshRenderer>().sharedMaterial = furnitureMat;
-
-            // Medicine Shelves along left wall
-            var shelves = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            shelves.name = "Medicine_Shelves";
-            shelves.transform.SetParent(interiorRoot, false);
-            shelves.transform.localPosition = new Vector3(0.55f, 6.5f, 1.5f);
-            shelves.transform.localScale = new Vector3(3.0f, 0.6f, 3.0f);
-            if (furnitureMat != null) shelves.GetComponent<MeshRenderer>().sharedMaterial = furnitureMat;
-
-            // Setup Functional Door at FRONT +X entrance
-            var dGo = new GameObject("Clinic_Door");
-            dGo.transform.SetParent(clinicHouse.transform, false);
-            dGo.transform.localPosition = new Vector3(4.3f, 0.3f, 0.05f);
-            var doorRoot = dGo.transform;
-
-            var hingeGo = new GameObject("Door_Hinge");
-            hingeGo.transform.SetParent(doorRoot, false);
-            hingeGo.transform.localPosition = new Vector3(0f, -0.6f, 0f);
-            hingeGo.transform.localEulerAngles = Vector3.zero;
-
-            var panel = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            panel.name = "Door_Panel";
-            panel.transform.SetParent(hingeGo.transform, false);
-            panel.transform.localPosition = new Vector3(0f, 0.6f, 0.9f);
-            panel.transform.localEulerAngles = Vector3.zero;
-            panel.transform.localScale = new Vector3(0.08f, 1.2f, 1.8f);
-            if (planksMat != null) panel.GetComponent<MeshRenderer>().sharedMaterial = planksMat;
-
-            var doorInteractable = panel.AddComponent<DoorInteractable>();
-            doorInteractable.hingeTransform = hingeGo.transform;
-            doorInteractable.rotationAxis = Vector3.forward;
-            doorInteractable.openAngle = 90f;
-            doorInteractable.transitionDuration = 0.7f;
-            doorInteractable.openPrompt = "Open Clinic Door";
-            doorInteractable.closePrompt = "Close Clinic Door";
-
-            isDirty = true;
-        }
-
-        // 8. Setup Elder's House (House_2.001)
-        var elderHouseGo = GameObject.Find("Scene_1_map/House_2.001");
-        if (elderHouseGo != null)
-        {
-            // Remove monolithic BoxCollider
-            var solidCol = elderHouseGo.GetComponent<BoxCollider>();
-            if (solidCol != null)
+            // Setup Clinic_Colliders child hierarchy
+            var collidersRoot = clinicHouse.transform.Find("Clinic_Colliders");
+            if (collidersRoot == null)
             {
-                Object.DestroyImmediate(solidCol);
+                var cGo = new GameObject("Clinic_Colliders");
+                cGo.transform.SetParent(clinicHouse.transform, false);
+                collidersRoot = cGo.transform;
                 isDirty = true;
+
+                // Segmented wall colliders (leaving entrance clear)
+                // Left Wall
+                CreateBoxColliderChild(collidersRoot, "Wall_Left", new Vector3(-3.5f, 0f, 3.8f), new Vector3(0.5f, 15f, 7.8f));
+                // Right Wall
+                CreateBoxColliderChild(collidersRoot, "Wall_Right", new Vector3(4.2f, 0f, 3.8f), new Vector3(0.5f, 15f, 7.8f));
+                // Back Wall
+                CreateBoxColliderChild(collidersRoot, "Wall_Back", new Vector3(0.4f, 0f, 7.7f), new Vector3(7.4f, 15f, 0.5f));
+                // Roof
+                CreateBoxColliderChild(collidersRoot, "Roof_Collider", new Vector3(0.4f, 7.5f, 3.8f), new Vector3(7.5f, 0.5f, 7.8f));
+                // Front Wall Left of Door
+                CreateBoxColliderChild(collidersRoot, "Front_Left", new Vector3(-2.4f, 0f, 0.0f), new Vector3(2.5f, 15f, 0.5f));
+                // Front Wall Right of Door
+                CreateBoxColliderChild(collidersRoot, "Front_Right", new Vector3(3.1f, 0f, 0.0f), new Vector3(2.5f, 15f, 0.5f));
             }
 
-            // Remove any old generic trigger or children
-            var knockTrig = elderHouseGo.transform.Find("Doorway_Knock_Trigger");
-            if (knockTrig != null) Object.DestroyImmediate(knockTrig.gameObject);
-            var oldColliders = elderHouseGo.transform.Find("Elder_Colliders");
-            if (oldColliders != null) Object.DestroyImmediate(oldColliders.gameObject);
-            var oldInterior = elderHouseGo.transform.Find("Elder_Interior");
-            if (oldInterior != null) Object.DestroyImmediate(oldInterior.gameObject);
-            var oldDoor = elderHouseGo.transform.Find("Elder_Door");
-            if (oldDoor != null) Object.DestroyImmediate(oldDoor.gameObject);
+            // Setup Clinic_Interior child hierarchy
+            var interiorRoot = clinicHouse.transform.Find("Clinic_Interior");
+            if (interiorRoot == null)
+            {
+                var iGo = new GameObject("Clinic_Interior");
+                iGo.transform.SetParent(clinicHouse.transform, false);
+                interiorRoot = iGo.transform;
+                isDirty = true;
 
-            // Setup Elder_Colliders child hierarchy (segmented perimeter walls, FRONT doorway clear on -X facade)
-            var cGo = new GameObject("Elder_Colliders");
-            cGo.transform.SetParent(elderHouseGo.transform, false);
-            var collidersRoot = cGo.transform;
+                // Interior Floor
+                var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                floor.name = "Interior_Floor";
+                floor.transform.SetParent(interiorRoot, false);
+                floor.transform.localPosition = new Vector3(0.4f, -4.5f, 3.8f);
+                floor.transform.localScale = new Vector3(7.2f, 0.3f, 7.5f);
 
-            CreateBoxColliderChild(collidersRoot, "Wall_Back_East", new Vector3(8.95f, 0f, 0.85f), new Vector3(0.4f, 19.5f, 8.5f));
-            CreateBoxColliderChild(collidersRoot, "Wall_North_Gable", new Vector3(4.12f, -9.5f, 0.85f), new Vector3(9.5f, 0.4f, 8.5f));
-            CreateBoxColliderChild(collidersRoot, "Wall_South_Gable", new Vector3(4.12f, 9.5f, 0.85f), new Vector3(9.5f, 0.4f, 8.5f));
-            CreateBoxColliderChild(collidersRoot, "Roof_Collider", new Vector3(4.12f, 0f, 5.1f), new Vector3(9.5f, 19.5f, 0.4f));
-            CreateBoxColliderChild(collidersRoot, "Front_Wall_North", new Vector3(-0.75f, -5.3f, 0.85f), new Vector3(0.4f, 8.4f, 8.5f));
-            CreateBoxColliderChild(collidersRoot, "Front_Wall_South", new Vector3(-0.75f, 5.3f, 0.85f), new Vector3(0.4f, 8.4f, 8.5f));
-            CreateBoxColliderChild(collidersRoot, "Front_Door_Lintel", new Vector3(-0.75f, 0.0f, 2.6f), new Vector3(0.4f, 2.2f, 5.0f));
+                // Medicine Crafting Table
+                var table = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                table.name = "Medicine_Crafting_Table";
+                table.transform.SetParent(interiorRoot, false);
+                table.transform.localPosition = new Vector3(0.4f, -3.2f, 6.2f);
+                table.transform.localScale = new Vector3(3.2f, 1.2f, 1.2f);
 
-            // Setup Elder_Interior child hierarchy
-            var iGo = new GameObject("Elder_Interior");
-            iGo.transform.SetParent(elderHouseGo.transform, false);
-            var interiorRoot = iGo.transform;
+                // Interactive Station on Table
+                var tableInteractable = table.AddComponent<SimpleInteractable>();
+                tableInteractable.promptText = "Examine Medicine Table";
+                tableInteractable.responseMessage = "Vaidya's Crafting Table: Used to grind herbs and brew curative remedies.";
 
-            // Interior Floor (horizontal in world space: thickness in local Z)
-            var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            floor.name = "Interior_Floor";
-            floor.transform.SetParent(interiorRoot, false);
-            floor.transform.localPosition = new Vector3(4.12f, 0.0f, -3.55f);
-            floor.transform.localScale = new Vector3(9.4f, 19.0f, 0.05f);
-            if (planksMat != null) floor.GetComponent<MeshRenderer>().sharedMaterial = planksMat;
+                // Mortar prop on table
+                var mortar = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                mortar.name = "Herbal_Mortar";
+                mortar.transform.SetParent(interiorRoot, false);
+                mortar.transform.localPosition = new Vector3(0.4f, -2.4f, 6.2f);
+                mortar.transform.localScale = new Vector3(0.5f, 0.3f, 0.5f);
+            }
 
-            // Elder Council / Meeting Table
-            var table = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            table.name = "Elder_Meeting_Table";
-            table.transform.SetParent(interiorRoot, false);
-            table.transform.localPosition = new Vector3(3.0f, 0.0f, -3.10f);
-            table.transform.localScale = new Vector3(1.4f, 3.0f, 0.7f);
-            if (furnitureMat != null) table.GetComponent<MeshRenderer>().sharedMaterial = furnitureMat;
+            // Setup Functional Door at entrance
+            var doorRoot = clinicHouse.transform.Find("Clinic_Door");
+            if (doorRoot == null)
+            {
+                var dGo = new GameObject("Clinic_Door");
+                dGo.transform.SetParent(clinicHouse.transform, false);
+                dGo.transform.localPosition = new Vector3(0.4f, -4.5f, 0.0f);
+                doorRoot = dGo.transform;
+                isDirty = true;
 
-            var tableInteractable = table.AddComponent<SimpleInteractable>();
-            tableInteractable.promptText = "Examine Council Table";
-            tableInteractable.responseMessage = "The Village Council Table: Ancient maps and Ayurvedic scrolls are laid out for consultation.";
-            tableInteractable.isRepeatable = true;
+                // Door Hinge Pivot
+                var hingeGo = new GameObject("Door_Hinge");
+                hingeGo.transform.SetParent(doorRoot, false);
+                hingeGo.transform.localPosition = new Vector3(-0.9f, 0f, 0f);
 
-            // Visitor Benches
-            var benchLeft = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            benchLeft.name = "Visitor_Bench_Left";
-            benchLeft.transform.SetParent(interiorRoot, false);
-            benchLeft.transform.localPosition = new Vector3(3.0f, -2.5f, -3.25f);
-            benchLeft.transform.localScale = new Vector3(0.8f, 2.5f, 0.45f);
-            if (furnitureMat != null) benchLeft.GetComponent<MeshRenderer>().sharedMaterial = furnitureMat;
+                // Door Panel Mesh & Collider
+                var panel = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                panel.name = "Door_Panel";
+                panel.transform.SetParent(hingeGo.transform, false);
+                panel.transform.localPosition = new Vector3(0.9f, 2.2f, 0f); // Offset so hinge is on the side
+                panel.transform.localScale = new Vector3(1.8f, 4.4f, 0.15f);
 
-            var benchRight = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            benchRight.name = "Visitor_Bench_Right";
-            benchRight.transform.SetParent(interiorRoot, false);
-            benchRight.transform.localPosition = new Vector3(3.0f, 2.5f, -3.25f);
-            benchRight.transform.localScale = new Vector3(0.8f, 2.5f, 0.45f);
-            if (furnitureMat != null) benchRight.GetComponent<MeshRenderer>().sharedMaterial = furnitureMat;
-
-            // Elder Dais (raised wooden platform at back of the room)
-            var dais = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            dais.name = "Elder_Dais";
-            dais.transform.SetParent(interiorRoot, false);
-            dais.transform.localPosition = new Vector3(7.0f, 0.0f, -3.35f);
-            dais.transform.localScale = new Vector3(3.5f, 4.0f, 0.3f);
-            if (furnitureMat != null) dais.GetComponent<MeshRenderer>().sharedMaterial = furnitureMat;
-
-            // Village Elder NPC on the Dais
-            var elderGo = new GameObject("Village_Elder");
-            elderGo.transform.SetParent(interiorRoot, false);
-            elderGo.transform.localPosition = new Vector3(7.0f, 0.0f, -3.20f);
-            var elderCol = elderGo.AddComponent<BoxCollider>();
-            elderCol.size = new Vector3(3.5f, 3.5f, 3.5f);
-            elderCol.isTrigger = true;
-
-            var elderNpc = elderGo.AddComponent<NPCInteractable>();
-            elderNpc.npcName = "Village Elder";
-            elderNpc.promptVerb = "Consult";
-            elderNpc.isVillageElder = true;
-            elderNpc.mission1IncompleteDialogue = "Welcome, traveler. A shadow hangs over Arogya Gram. Have you checked on the fallen villager near the village entrance?";
-            elderNpc.mission1CompleteDialogue = "You have shown compassion by tending to our fallen kin with medicinal Tulsi. Now, the source of our peril lies at the Village Well. Its waters are contaminated. Please investigate the well.";
-            elderNpc.mission2ActiveDialogue = "Please inspect the village well in the western courtyard. We must discover why its water is tainted.";
-
-            var elderSeat = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            elderSeat.name = "Elder_Seat";
-            elderSeat.transform.SetParent(elderGo.transform, false);
-            elderSeat.transform.localPosition = new Vector3(0f, 0f, 0.5f);
-            elderSeat.transform.localScale = new Vector3(1.2f, 0.5f, 1.2f);
-            if (furnitureMat != null) elderSeat.GetComponent<MeshRenderer>().sharedMaterial = furnitureMat;
-
-            // Setup Functional Door at FRONT -X entrance
-            var dGo = new GameObject("Elder_Door");
-            dGo.transform.SetParent(elderHouseGo.transform, false);
-            dGo.transform.localPosition = new Vector3(-0.75f, 0.0f, -3.45f);
-            var doorRoot = dGo.transform;
-
-            var hingeGo = new GameObject("Door_Hinge");
-            hingeGo.transform.SetParent(doorRoot, false);
-            hingeGo.transform.localPosition = new Vector3(0f, -0.6f, 0f);
-            hingeGo.transform.localEulerAngles = Vector3.zero;
-
-            var panel = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            panel.name = "Door_Panel";
-            panel.transform.SetParent(hingeGo.transform, false);
-            panel.transform.localPosition = new Vector3(0f, 0.6f, 0.9f);
-            panel.transform.localEulerAngles = Vector3.zero;
-            panel.transform.localScale = new Vector3(0.08f, 1.2f, 1.8f);
-            if (planksMat != null) panel.GetComponent<MeshRenderer>().sharedMaterial = planksMat;
-
-            var doorInteractable = panel.AddComponent<DoorInteractable>();
-            doorInteractable.hingeTransform = hingeGo.transform;
-            doorInteractable.rotationAxis = Vector3.forward;
-            doorInteractable.openAngle = -90f;
-            doorInteractable.transitionDuration = 0.7f;
-            doorInteractable.openPrompt = "Open Elder's House";
-            doorInteractable.closePrompt = "Close Door";
-
-            isDirty = true;
+                var doorInteractable = panel.AddComponent<DoorInteractable>();
+                doorInteractable.hingeTransform = hingeGo.transform;
+                doorInteractable.openAngle = 90f;
+                doorInteractable.transitionDuration = 0.7f;
+                doorInteractable.openPrompt = "Open Clinic Door";
+                doorInteractable.closePrompt = "Close Clinic Door";
+            }
         }
 
-        // 9. Setup Exterior Doorway Triggers on the other 10 houses
+        // 8. Setup Exterior Doorway Triggers on the other 11 houses
         string[] otherHouseNames = new string[]
         {
             "House_1", "House_1.001", "House_1.002",
-            "House_2", "House_2.002", "House_2.003",
+            "House_2", "House_2.001", "House_2.002", "House_2.003",
             "House_3", "House_3.001", "House_3.002", "House_3.003"
         };
 
